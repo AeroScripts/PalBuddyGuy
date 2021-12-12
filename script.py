@@ -1,21 +1,68 @@
+JawRight = 0 # +JawX
+JawLeft = 1 # -JawX
+JawForward = 2
+JawOpen = 3
+MouthApeShape = 4
+MouthUpperRight = 5 # +MouthUpper
+MouthUpperLeft = 6 # -MouthUpper
+MouthLowerRight = 7 # +MouthLower
+MouthLowerLeft = 8 # -MouthLower
+MouthUpperOverturn = 9
+MouthLowerOverturn = 10
+MouthPout = 11
+MouthSmileRight = 12 # +SmileSadRight
+MouthSmileLeft = 13 # +SmileSadLeft
+MouthSadRight = 14 # -SmileSadRight
+MouthSadLeft = 15 # -SmileSadLeft
+CheekPuffRight = 16
+CheekPuffLeft = 17
+CheekSuck = 18
+MouthUpperUpRight = 19
+MouthUpperUpLeft = 20
+MouthLowerDownRight = 21
+MouthLowerDownLeft = 22
+MouthUpperInside = 23
+MouthLowerInside = 24
+MouthLowerOverlay = 25
+TongueLongStep1 = 26
+TongueLongStep2 = 32
+TongueDown = 30 # -TongueY
+TongueUp = 29 # +TongueY
+TongueRight = 28 # +TongueX
+TongueLeft = 27 # -TongueX
+TongueRoll = 31
+TongueUpLeftMorph = 34
+TongueUpRightMorph = 33
+TongueDownLeftMorph = 36
+TongueDownRightMorph = 35
 
-DATASET_FOLDER = "./"
+
+ENABLE_LOGGING = True
+ENABLE_DISPLAY = True
+DATASET_FOLDER = "G:\\sranidatisets\\"
+
+max_power = 0.9 # the maximum threshold. Values will be adjusted to -1...1 range based on this
 
 # dataset groups. .pkl files of the same paramter/class should be in the same list. Each primary key is a parameter. Names must match the name you specified when recording, plus "-em.pkl"
-order = [["neutral2-em.pkl", "neutral1-em.pkl"], ["happy-em.pkl"], ["mad1.pkl", "mad2.pkl"], ["sad-em.pkl"]]
+order = [["neutral2-em.mmap", "neutral1-em.mmap", "nut3-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad1.mmap", "mad2.mmap", "mad4-em.mmap"], ["sad-em.mmap"], ["purseleft-em.mmap"], ["purseright-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["nwigleft-em.mmap"], ["nwigright-em.mmap"], ["showteth-em.mmap"]] # , ["weirdchamp-em.mmap"]
+
+to_replace = {2: JawRight, 1: JawLeft, 4: MouthUpperUpLeft, 5: MouthUpperUpRight, 7: JawForward, 3: MouthPout}
+to_replace_count = len(to_replace)
+
+
+# can be auto calculated with fastcal command
+max_power_array = [ max_power for e in range(to_replace_count) ]
+
 
 import socket
 import sys
+import os
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("", 18452))
+vrcft = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+vrcft.bind(("", 26421))
+vrcft.listen(1)
 
-s.listen(1)
-
-s2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s2.bind(("", 18453))
-
-s2.listen(1)
+print("Listening on ports 18452, 18455, 26421.")
 
 def decode_image(data, flipped=False):
     data = np.frombuffer(data, dtype=np.float32)
@@ -45,11 +92,6 @@ import threading
 
 lt = time.time()
 
-backbuffer = np.zeros((200, 200, 3), dtype=np.uint8)
-buffer = np.zeros((200, 200, 3), dtype=np.uint8)
-cv2.imshow("test", cv2.resize(buffer, (800, 800)))
-cv2.waitKey(1)
-
 highest_tid = 0
 
 highest_hwid = 0
@@ -60,80 +102,52 @@ neural_queue = []
 last_eye = None
 swapped = False
 
-def reader_thread(s, id):
-    global highest_tid
-    global highest_hwid
-    global connection_count
-    global lt
-    global backbuffer
-    global last_eye
+target_stream = None # stream to write parameters to
+target_stream_is_valid = False # if the stream is currently valid
+
+def write_float(f):
+    f = (f + 1) * 32767.0
+    f = min(65535, f)
+    f = max(0, f)
+    f = int(f)
+    target_stream.sendall(bytes([f // 256, f % 256]))
+    
+def write_param(key, value):
+    target_stream.sendall(bytes([key,]))
+    write_float(value)
+    
+def write_params(tensor):
+
+    # normalize
+    #tensor = torch.clip(((tensor / max_power_array) * 2) - 1, -1, 1)#torch.clip(tensor * 2 / max_power - 1, -1, 1)
+
+    target_stream.sendall(bytes([2,]))
+    target_stream.sendall(bytes([to_replace_count,]))
+    i = 0
+    for key in to_replace.keys():
+        write_param(to_replace[key], torch.clip(((tensor[key] / max_power_array[i]) * 2) - 1, -1, 1))
+        i = i + 1
+
+def reader_thread():
     while True:
         try:
-            c, addr = s.accept()
-            print("Received connection")
-            connection_count = connection_count + 1
-            try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect(("127.0.0.1", 18454))
+                
+                def read(length):
+                    v = s.recv(length)
+                    while len(v) < length:
+                        v = v + s.recv(length - len(v))
+                    return v
 
-                rid = 0
                 while True:
-                    def read(length):
-                        v = c.recv(length)
-                        while len(v) < length:
-                            v = v + c.recv(length - len(v))
-                        return v
-                    
-                    def read_int():
-                        v = read(4)
-                        return int.from_bytes(v, "little")
-
-                    device = read_int() # broken
-                    length = read_int()
-                    thread_id = read_int()
-                    
-                    if id == 1 and length == 80000:
-                        highest_hwid = (highest_hwid * 0.99) + (device * 0.01) # broken as fuck
-                    
-                    if thread_id > highest_tid:
-                        highest_tid = thread_id
-                    
-                    if not (102400 == length or 80000 == length):
-                        print("Invalid packet!")
-                        try:
-                            c.close()
-                        except:
-                            traceback.print_exc()
-                        break
-
-                    data = read(length)
-                    
-                    if length == 80000: # camera frame
-                        if (id == 0 and (not swapped)) or (id == 1 and swapped):
-                            buffer[100:200, :, :] = decode_image(data, flipped=True)
-                            backbuffer = buffer.copy()
-                        else:
-                            buffer[:100, :, :] = decode_image(data)
-                    else:
-                        if (id == 0 and (not swapped)) or (id == 1 and swapped):
-                            if last_eye is not None:
-                                neural_queue.append((last_eye, data))
-                                if len(neural_queue) > 60 * 4:
-                                    del neural_queue[:len(neural_queue)-(60 * 4)]
-                        else:
-                            last_eye = data
-
-                    rid = rid + 1
-            except:
-                import traceback
-                traceback.print_exc()
-                try:
-                    c.close()
-                except:
-                    traceback.print_exc()
-                time.sleep(0.1)
+                    neural_queue.append((read(102400), read(102400)))
+                    if len(neural_queue) > 60 * 4:
+                        neural_queue.pop(0)
         except:
             import traceback
             traceback.print_exc()
-        connection_count = connection_count - 1
+            time.sleep(0.1)
 
 import torch
 import pickle
@@ -144,9 +158,16 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else "cpu:0"
 batch_size = 128
 epochs = 20
 
+infer_output_paused = False
+do_quick_cal = False
+logger_string = "".join(["%.3f " for e in range(len(order))]).rstrip()
+
 def neural_thread():
     global swapped
     global batch_size
+    global do_quick_cal
+    global max_power_array
+    
     print("Neural thread started!")
     
     conv1 = torch.nn.Conv2d(128, 256, 3, stride=2, padding=1).cuda()
@@ -202,7 +223,8 @@ def neural_thread():
                 dataset_block.append((decode_neural(d[0]), decode_neural(d[1])))
                 print("%d / 2048    " % len(dataset_block), end='\r')
                 
-            with open(DATASET_FOLDER + dname + "-em.pkl", "wb") as w:
+            output_file = DATASET_FOLDER + str(dname) + "-em.pkl"
+            with open(output_file, "wb") as w:
                 pickle.dump(dataset_block, w)
                 
         elif com == "save":
@@ -210,6 +232,32 @@ def neural_thread():
             print("Saved model!")
         elif com == "load":
             load()
+        elif com == "stats":
+            start = time.time()
+            tc = 0
+            neural_queue.clear()
+            while time.time() - start < 5:
+                if len(neural_queue) > 0:
+                    neural_queue.pop(0)
+                    tc = tc + 1
+                    
+            print("%d fps" % (tc / 5))
+        elif com == "convertmmap":
+            print("Coverting checkpoints to mmaps...")
+            file_list = os.listdir(DATASET_FOLDER)
+            for file in tqdm(file_list):
+                if file[-3:] == "pkl":
+                    block = pickle.load(open(DATASET_FOLDER + file, "rb"))
+                    print(len(block))
+                    mmap_file = np.memmap(DATASET_FOLDER + file[:-3] + "mmap", dtype='float32', mode='w+', shape=(len(block), 128, 20, 20))
+                    index = 0
+                    for e in block:
+                        a = torch.cat((torch.from_numpy(e[0]), torch.from_numpy(e[1])), dim=0).numpy()
+                        mmap_file[index] = a
+                        index = index + 1
+                    mmap_file.flush()
+                    del mmap_file
+                    #[torch.cat((torch.from_numpy(e[0]), torch.from_numpy(e[1])), dim=0) for e in pickle.load(open(DATASET_FOLDER + set, "rb"))]
         elif com == "infer":
             with torch.no_grad():
             
@@ -220,18 +268,104 @@ def neural_thread():
                 dropout = ugly
                 dropout2 = ugly
                 
+                #uglier
+                def subcommands():
+                    global infer_output_paused
+                    global do_quick_cal
+                    while True:
+                        cmd = input()
+                        infer_output_paused = True
+                        print("\nPlease enter command...")
+                        cmd = input()
+                        if cmd == "fastcal":
+                            print("Running fast calibration! Avatar will be puppeted, follow the puppet to calibrate thresholds.")
+                            print("Starting in 10 seconds...")
+                            time.sleep(10)
+                            do_quick_cal = True
+                            
+                        infer_output_paused = False
+                        
+                threading.Thread(target=subcommands, args=()).start()
                 
                 if need_load:
                     load()
-                while True:
+                    
+                first = True
+                
+                def full_predict():
                     while len(neural_queue) == 0:
                         time.sleep(1)
                         print("Waiting for data...")
                     d = neural_queue[-1]
                     current_data = torch.cat((torch.from_numpy(decode_neural(d[0])), torch.from_numpy(decode_neural(d[1]))), dim=0).cuda().unsqueeze(0)
                     pred = predict(current_data)[0].cpu()
-                    print(pred, end='        \r')
+                    return pred
+                
+                full_predict()
+                print("\n\nInfer started! Press enter to specify a command, like fastcal\n\n")
+                
+                while True:
+                    if do_quick_cal:
+                        # zero out params for puppeting
+                        if target_stream_is_valid:
+                            target_stream.sendall(bytes([2,]))
+                            target_stream.sendall(bytes([to_replace_count,]))
+                            for key in to_replace.keys():
+                                write_param(to_replace[key], -1)
+                        
+                        quick_cal_result = []
+                        e = 0
+                        for key in to_replace.keys():
+                        #for e in range(to_replace_count):
+                            print("Puppeting %d" % e)
+                            # ease-in puppet
+                            if target_stream_is_valid:
+                                for i in range(100):
+                                    target_stream.sendall(bytes([2, 1, to_replace[key]]))
+                                    write_float((i / 50) - 1)
+                                    time.sleep(0.01)
+                                target_stream.sendall(bytes([2, 1, to_replace[key]]))
+                                write_float(1)
+                            
+                            # puppet for 3 seconds, take data from 2nd-3rd second
+                            time.sleep(2)
+                            neural_queue.clear()
+                            start_time = time.time()
+                            
+                            avg = 0
+                            cnt = 0
+                            while time.time() - start_time < 1:
+                                avg = avg + float(full_predict()[key])
+                                cnt = cnt + 1
+                            avg = avg / cnt
+                            quick_cal_result.append(avg + 1e-9)
+                            #time.sleep(1)
+                            
+                            # ease-out puppet
+                            if target_stream_is_valid:
+                                for i in range(100):
+                                    target_stream.sendall(bytes([2, 1, to_replace[key]]))
+                                    write_float(1 - ((i / 50) - 1))
+                                    time.sleep(0.01)
+                                target_stream.sendall(bytes([2, 1, to_replace[key]]))
+                                write_float(-1)
+                            
+                            e = e + 1
+                        do_quick_cal = False
+                        print("Finished FastCal!\nResults:")
+                        print(quick_cal_result)
+                        max_power_array = quick_cal_result
+                        print("\n\n")
+
+                    pred = full_predict()
+                    if target_stream_is_valid:
+                        write_params(pred)
+
+                    if not infer_output_paused:
+                        print(logger_string % tuple(pred.cpu().numpy()), end=' \r')
                     time.sleep(0.01)
+                        
+                    
         elif com == "train":
             need_load = False
             print("Training...")
@@ -242,9 +376,8 @@ def neural_thread():
             for sets in order:
                 datasets[setid] = []
                 for set in sets:
-                    print("Loading " + set)
-                    datasets[setid] += [torch.cat((torch.from_numpy(e[0]), torch.from_numpy(e[1])), dim=0) for e in pickle.load(open(DATASET_FOLDER + set, "rb"))]
-                    print(datasets[setid][0].shape)
+                    datasets[setid].append(np.memmap(DATASET_FOLDER + set, dtype='float32', mode='r', shape=(2048, 128, 20, 20)))
+
                 setid = setid + 1
             
             setid = setid - 1
@@ -268,21 +401,24 @@ def neural_thread():
                     for b in range(batch_size):
                         id = random.randint(0,setid)
                         mask = masks[id]
-                        sample = datasets[id][random.randint(0,len(datasets[id])-1)].cuda()
+                        sample = datasets[id][random.randint(0,len(datasets[id])-1)][random.randint(0,2047)]
+                        #print(sample.shape)
+                        #sample = torch.from_numpy(sample).cuda()
                         
                         batch.append(sample)
                         batch_mask.append(mask)
                         
-                    batch = torch.stack(batch, dim=0) 
+                    #batch = torch.stack(batch, dim=0) 
+                    batch = torch.from_numpy(np.stack(batch, axis=0)).cuda()
                     batch_mask = torch.stack(batch_mask, dim=0)
                     
                     pred = predict(batch)
                     
-                    loss = mse(pred, batch_mask)
+                    loss = mse(pred, batch_mask) * 100
                     
                     
                     loss.backward()
-                    p.set_description("Avg: %f Loss: %f         " % (avg, float(loss)))
+                    p.set_description("Avg: %f Loss: %f         " % (avg/100, float(loss)/100))
                     opt.step()
                     tl = tl + float(loss)
                 avg = float(tl/((2048*(setid+1)) // batch_size))
@@ -290,15 +426,50 @@ def neural_thread():
         else:
             print("Invalid command! valid: swap record")
     
+def vrcft_thread():
+    global target_stream
+    global target_stream_is_valid
+    while True:
+        try:
+            c, addr = vrcft.accept()
+            target_stream = c
+            target_stream_is_valid = True
+            print("Received connection from VRCFT")
+            def read_int():
+                v = c.recv(1)
+                while len(v) < 2:
+                    v = v + c.recv(1)
 
+                return int.from_bytes(v, "big")
 
-threading.Thread(target=reader_thread, args=(s, 0)).start()
-threading.Thread(target=reader_thread, args=(s2, 1)).start()
+            def read_byte():
+                v = c.recv(1)
+                while len(v) < 1:
+                    v = v + c.recv(1)
+
+                return int.from_bytes(v, "big")
+
+            def read_float():
+                a = read_int()
+                a = float(a) / 32767.0 - 1.0
+                return a
+
+            while True:
+                rid = read_byte()
+                if rid == 1:
+                    floats = [ read_float() for e in range(37) ]
+                elif rid == 2:
+                    floats = [ read_float() for e in range(60) ]
+                else:
+                    print("Invalid RID! " + str(rid))
+            target_stream_is_valid = False
+            
+        except:
+            target_stream_is_valid = False
+            import traceback
+            traceback.print_exc()
+            time.sleep(1)
+
+threading.Thread(target=reader_thread, args=()).start()
 threading.Thread(target=neural_thread, args=()).start()
-
-
-while True:
-    if time.time() - lt > 0.01:
-        lt = time.time()
-        cv2.imshow("test", cv2.resize(backbuffer, (800, 800)))
-        cv2.waitKey(1)
+threading.Thread(target=vrcft_thread, args=()).start()
