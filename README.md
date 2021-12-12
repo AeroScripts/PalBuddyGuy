@@ -22,6 +22,8 @@ pip install tqdm opencv-python numpy
 
 Make sure to run this script before opening SRanipalRuntime!
 
+Run tvm_proxy.py when you launch SRanipalRuntime. It is required by script.py
+
 ** output swapping **
 Before running any other commands, ensure the output window shows eye cameras on top, and face cameras below. If its reversed, run the comamand "swap" to swap them first.
 This will be handled automatically in a later release.
