@@ -20,6 +20,16 @@ pip install tqdm opencv-python numpy
 
 # Running
 
+### Steps:
+<ol>1. Start Anaconda Prompt and run script.py</ol>
+<ol>2. Start another instance of Anaconda Prompt to run tvm_proxy.py</ol>
+<ol>3. Start SRaniple</ol>
+<ol>4. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange)</ol>
+
+Note: .bat files can be used to make easier startup of the script. They will need to be editted to start the python script in the repository's directory.
+
+### Script usage
+
 Make sure to run this script before opening SRanipalRuntime!
 
 Run tvm_proxy.py when you launch SRanipalRuntime. It is required by script.py
