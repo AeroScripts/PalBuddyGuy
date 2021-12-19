@@ -31,26 +31,15 @@ Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recordi
 
 ### Script usage
 
-** output swapping **
-Before running any other commands, ensure the output window shows eye cameras on top, and face cameras below. If its reversed, run the comamand "swap" to swap them first.
-This will be handled automatically in a later release.
-
-** recording **
-To run this, you must first record some "calibration" data for the expressions you want.
-This *must* always include a "neutral" face recording. This is explained in more detail below.
-When recording you sould try to make movements during the 20-30 seconds that you are calibrating, just make sure the target expression you are calibrating for is the most predominant (this also includes like adjusting your headset and stuff while making the expression)
-
-the idea is to capture some diverse data where the primary consistent point is the target expression. Once you record one for each expression you want (both face and eyes are recorded at the same time) I can explain the next bit
-
-
-
-** training **
-Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file.
-Run the script, and enter the "train" command. Once it finishes, make sure to run "save" to save the results. 
-Loss/Avg should be below 0.001 by the end. if not, something is wrong.
-
-** inference **
-Run the script and enter "infer". This is what you will run when actually using the parameters
+|Command|Description|
+|---------|-----------|
+|`swap`|Before running any other commands, ensure the output window shows eye cameras on top, and face cameras below. If its reversed, run the comamand "swap" to swap them first. This will be handled automatically in a later release.|
+|`record`|To record datasets. This *must* always include a "neutral" face recording. This is explained in more detail below. When recording you sould try to make movements during the 20-30 seconds that you are calibrating, just make sure the target expression you are calibrating for is the most predominant (this also includes like adjusting your headset and stuff while making the expression). The idea is to capture some diverse data where the primary consistent point is the target expression. Once you record one for each expression you want (both face and eyes are recorded at the same time)|
+|`stats`|Stats of model|
+|`infer`| Inference is what you will run when actually using the parameters|
+|`train`|Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file. Run the script, and enter the "train" command. Once it finishes, make sure to run "save" to save the results. Loss/Avg should be below 0.001 by the end. if not, something is wrong|
+|`save`|Save model|
+|`load`|Load model|
 
 # Tips
 For neutral face recordings, this shouldn't nesisarily be truly neutral face, but any faces that you aren't trying to track. I keep it mostly neutral but also do some taking, and make sure to look around/blink with the eye tracker (unless one of your parameters is related to that)
