@@ -18,6 +18,9 @@ pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio===0.10.0+cu
 pip install tqdm opencv-python numpy
 ```
 
+Edit the .bat file to repository's directory for running scripts.</br>
+Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recording is 408mb so you need a decent amount of storage space free</br>
+
 # Running
 
 ### Steps:
@@ -26,13 +29,7 @@ pip install tqdm opencv-python numpy
 <ol>3. Start SRaniple</ol>
 <ol>4. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange)</ol>
 
-Note: .bat files can be used to make easier startup of the script. They will need to be editted to start the python script in the repository's directory.
-
 ### Script usage
-
-Make sure to run this script before opening SRanipalRuntime!
-
-Run tvm_proxy.py when you launch SRanipalRuntime. It is required by script.py
 
 ** output swapping **
 Before running any other commands, ensure the output window shows eye cameras on top, and face cameras below. If its reversed, run the comamand "swap" to swap them first.
@@ -45,7 +42,7 @@ When recording you sould try to make movements during the 20-30 seconds that you
 
 the idea is to capture some diverse data where the primary consistent point is the target expression. Once you record one for each expression you want (both face and eyes are recorded at the same time) I can explain the next bit
 
-You will also need to edit the top of script.py to change the save folder path. its not run directory cause each recording is 408mb so you need a decent amount of storage space free
+
 
 ** training **
 Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file.
