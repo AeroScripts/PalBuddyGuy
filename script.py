@@ -39,12 +39,14 @@ TongueDownRightMorph = 35
 
 ENABLE_LOGGING = True
 ENABLE_DISPLAY = True
-DATASET_FOLDER = "A:\\Unity\\_Assets\\Special\\PalBuddyGuy\\sranidatiset"
+DATASET_FOLDER = "A:\\Unity\\_Assets\\Special\\PalBuddyGuy\\sranidatisets\\"
 
 max_power = 0.9 # the maximum threshold. Values will be adjusted to -1...1 range based on this
 
 # dataset groups. .pkl files of the same paramter/class should be in the same list. Each primary key is a parameter. Names must match the name you specified when recording, plus "-em.pkl"
-order = [["neutral2-em.mmap", "neutral1-em.mmap", "nut3-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad1.mmap", "mad2.mmap", "mad4-em.mmap"], ["sad-em.mmap"], ["purseleft-em.mmap"], ["purseright-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["nwigleft-em.mmap"], ["nwigright-em.mmap"], ["showteth-em.mmap"]] # , ["weirdchamp-em.mmap"]
+#order = [["neutral2-em.mmap", "neutral1-em.mmap", "nut3-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad1.mmap", "mad2.mmap", "mad4-em.mmap"], ["sad-em.mmap"], ["purseleft-em.mmap"], ["purseright-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["nwigleft-em.mmap"], ["nwigright-em.mmap"], ["showteth-em.mmap"]] # , ["weirdchamp-em.mmap"]
+
+order = [["neutral2-em.mmap", "neutral1-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad-em.mmap"], ["sad-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["showteth-em.mmap"], ["upperupleft-em.mmap"]]
 
 to_replace = {2: JawRight, 1: JawLeft, 4: MouthUpperUpLeft, 5: MouthUpperUpRight, 7: JawForward, 3: MouthPout}
 to_replace_count = len(to_replace)
