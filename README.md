@@ -33,9 +33,10 @@ Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recordi
 |---------|-----------|
 |`swap`|Before running any other commands, ensure the output window shows eye cameras on top, and face cameras below. If its reversed, run the comamand "swap" to swap them first. This will be handled automatically in a later release.|
 |`record`|To record datasets. This *must* always include a "neutral" face recording. This is explained in more detail below. When recording you sould try to make movements during the 20-30 seconds that you are calibrating, just make sure the target expression you are calibrating for is the most predominant (this also includes like adjusting your headset and stuff while making the expression). The idea is to capture some diverse data where the primary consistent point is the target expression. Once you record one for each expression you want (both face and eyes are recorded at the same time)|
+|`convertmmap`|Convert pkl file to mmap to be used by training.
+|`train`|Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file. Run the script, and enter the "train" command. Once it finishes, make sure to run "save" to save the results. Loss/Avg should be below 0.001 by the end. if not, something is wrong|
 |`stats`|Stats of model|
 |`infer`| Inference is what you will run when actually using the parameters|
-|`train`|Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file. Run the script, and enter the "train" command. Once it finishes, make sure to run "save" to save the results. Loss/Avg should be below 0.001 by the end. if not, something is wrong|
 |`save`|Save model|
 |`load`|Load model|
 
