@@ -1,4 +1,1 @@
-@echo off
-A:
-cd A:\Unity\_Assets\Special\PalBuddyGuy
-python tvm_proxy.py
+C:\ProgramData\Anaconda3\Scripts\activate.bat && python tvm_proxy.py

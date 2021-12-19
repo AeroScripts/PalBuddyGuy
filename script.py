@@ -39,7 +39,7 @@ TongueDownRightMorph = 35
 
 ENABLE_LOGGING = True
 ENABLE_DISPLAY = True
-DATASET_FOLDER = "G:\\sranidatisets\\"
+DATASET_FOLDER = "A:\\Unity\\_Assets\\Special\\PalBuddyGuy\\sranidatiset"
 
 max_power = 0.9 # the maximum threshold. Values will be adjusted to -1...1 range based on this
 
