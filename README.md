@@ -18,16 +18,14 @@ pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio===0.10.0+cu
 pip install tqdm opencv-python numpy
 ```
 
-Edit the .bat file to repository's directory for running scripts.</br>
 Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recording is 408mb so you need a decent amount of storage space free</br>
 
 # Running
 
 ### Steps:
-<ol>1. Start Anaconda Prompt and run script.py</ol>
-<ol>2. Start another instance of Anaconda Prompt to run tvm_proxy.py</ol>
-<ol>3. Start SRaniple</ol>
-<ol>4. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange)</ol>
+<ol>1. Run.bat</ol>
+<ol>2. Start SRaniple</ol>
+<ol>3. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange)</ol>
 
 ### Script usage
 
