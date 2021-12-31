@@ -29,8 +29,8 @@ Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recordi
 <ol>4. On the script.py window use 'record' command to start recording datasets, enter in the dataset name to be used</ol>
 <ol>5. After recording datasets add datasets in the order list on script.py order</ol>
 <ol>6. Convert datasets .plk to .mmap with 'convertmmap'</ol>
-<ol>7. Use 'Train' command to train to the datasets, loss/avg should be below 0.001
-<ol>8. 'save' to save model. Will show up as buddypal.pt in the folder
+<ol>7. Use 'Train' command to train to the datasets, loss/avg should be below 0.001</ol>
+  <ol>8. 'save' to save model. Will show up as buddypal.pt in the folder</ol>
 
 
 ### Script usage
