@@ -1,64 +1,108 @@
-JawRight = 0 # +JawX
-JawLeft = 1 # -JawX
-JawForward = 2
-JawOpen = 3
-MouthApeShape = 4
-MouthUpperRight = 5 # +MouthUpper
-MouthUpperLeft = 6 # -MouthUpper
-MouthLowerRight = 7 # +MouthLower
-MouthLowerLeft = 8 # -MouthLower
-MouthUpperOverturn = 9
-MouthLowerOverturn = 10
-MouthPout = 11
-MouthSmileRight = 12 # +SmileSadRight
-MouthSmileLeft = 13 # +SmileSadLeft
-MouthSadRight = 14 # -SmileSadRight
-MouthSadLeft = 15 # -SmileSadLeft
-CheekPuffRight = 16
-CheekPuffLeft = 17
-CheekSuck = 18
-MouthUpperUpRight = 19
-MouthUpperUpLeft = 20
-MouthLowerDownRight = 21
-MouthLowerDownLeft = 22
-MouthUpperInside = 23
-MouthLowerInside = 24
-MouthLowerOverlay = 25
-TongueLongStep1 = 26
-TongueLongStep2 = 32
-TongueDown = 30 # -TongueY
-TongueUp = 29 # +TongueY
-TongueRight = 28 # +TongueX
-TongueLeft = 27 # -TongueX
-TongueRoll = 31
-TongueUpLeftMorph = 34
-TongueUpRightMorph = 33
-TongueDownLeftMorph = 36
-TongueDownRightMorph = 35
+import time
+import numpy as np
+import cv2
+import threading
 
+import socket
+import sys
+import os
+import torch
+import pickle
+import random
+from tqdm import tqdm
+
+#----------------------------------------------------
+# Static Variables
+#----------------------------------------------------
+
+blendshape_keys = {
+    "JawRight": 0, # +JawX
+    "JawLeft": 1, # -JawX
+    "JawForward": 2,
+    "JawOpen": 3,
+    "MouthApeShape": 4,
+    "MouthUpperRight": 5, # +MouthUpper
+    "MouthUpperLeft": 6, # -MouthUpper
+    "MouthLowerRight": 7, # +MouthLower
+    "MouthLowerLeft": 8, # -MouthLower
+    "MouthUpperOverturn": 9,
+    "MouthLowerOverturn": 10,
+    "MouthPout": 11,
+    "MouthSmileRight": 12, # +SmileSadRight
+    "MouthSmileLeft": 13, # +SmileSadLeft
+    "MouthSadRight": 14, # -SmileSadRight
+    "MouthSadLeft": 15, # -SmileSadLeft
+    "CheekPuffRight": 16,
+    "CheekPuffLeft": 17,
+    "CheekSuck": 18,
+    "MouthUpperUpRight": 19,
+    "MouthUpperUpLeft": 20,
+    "MouthLowerDownRight": 21,
+    "MouthLowerDownLeft": 22,
+    "MouthUpperInside": 23,
+    "MouthLowerInside": 24,
+    "MouthLowerOverlay": 25,
+    "TongueLongStep1": 26,
+    "TongueLongStep2": 32,
+    "TongueDown": 30, # -TongueY
+    "TongueUp": 29, # +TongueY
+    "TongueRight": 28, # +TongueX
+    "TongueLeft": 27, # -TongueX
+    "TongueRoll": 31,
+    "TongueUpLeftMorph": 34,
+    "TongueUpRightMorph": 33,
+    "TongueDownLeftMorph": 36,
+    "TongueDownRightMorph": 35
+}
+blendshape_keys_reversed = {}
+for k in blendshape_keys.keys():
+    blendshape_keys_reversed[blendshape_keys[k]] = k
 
 ENABLE_LOGGING = True
 ENABLE_DISPLAY = True
 DATASET_FOLDER = "A:\\Unity\\_Assets\\Special\\PalBuddyGuy\\sranidatisets\\"
 
 max_power = 0.9 # the maximum threshold. Values will be adjusted to -1...1 range based on this
+smoothing_mul = 0.3 # lower values = smoother
+
 
 # dataset groups. .pkl files of the same paramter/class should be in the same list. Each primary key is a parameter. Names must match the name you specified when recording, plus "-em.pkl"
-#order = [["neutral2-em.mmap", "neutral1-em.mmap", "nut3-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad1.mmap", "mad2.mmap", "mad4-em.mmap"], ["sad-em.mmap"], ["purseleft-em.mmap"], ["purseright-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["nwigleft-em.mmap"], ["nwigright-em.mmap"], ["showteth-em.mmap"]] # , ["weirdchamp-em.mmap"]
+order = [
+    ["MouthSmileRight-em.mmap"],
+    ["MouthSmileLeft-em.mmap"],
+	["MouthUpperUpRight-em.mmap"],
+	["MouthUpperUpLeft-em.mmap"], 
+    ["MouthLowerDownRight-em.mmap"],
+	["MouthLowerDownLeft-em.mmap"],
+    ["TongueLongStep2-em.mmap"], 
+    ["TongueUp-em.mmap"], 
+    ["TongueDown-em.mmap"] 
+    #["visch-em.mmap"],
+    #["visdd-em.mmap"],
+    #["visee-em.mmap"],
+    #["visff-em.mmap"],
+    #["visih-em.mmap"],
+    #["viskk-em.mmap"],
+    #["visnn-em.mmap"],
+    #["visoh-em.mmap"],
+    #["visou-em.mmap"],
+    #["visp-em.mmap"],
+    #["visrr-em.mmap"],
+    #["visss-em.mmap"],
+    #["visth-em.mmap"]
+] # , ["weirdchamp-em.mmap"]
 
-order = [["neutral2-em.mmap", "neutral1-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad-em.mmap"], ["sad-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["showteth-em.mmap"], ["upperupleft-em.mmap"]]
-
-to_replace = {2: JawRight, 1: JawLeft, 4: MouthUpperUpLeft, 5: MouthUpperUpRight, 7: JawForward, 3: MouthPout}
-to_replace_count = len(to_replace)
-
+to_replace = {1: "MouthSmileRight", 2: "MouthSmileLeft", 3: "MouthUpperUpRight", 4: "MouthUpperUpLeft", 5: "MouthLowerDownRight", 6: "MouthLowerDownLeft", 7: "TongueLongStep2", 8: "TongueUp", 9: "TongueDown"}
 
 # can be auto calculated with fastcal command
+to_replace_count = len(to_replace)
 max_power_array = [ max_power for e in range(to_replace_count) ]
 
 
-import socket
-import sys
-import os
+#----------------------------------------------------
+# Main Code
+#----------------------------------------------------
+
 
 vrcft = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 vrcft.bind(("", 26421))
@@ -157,6 +201,7 @@ import random
 from tqdm import tqdm
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else "cpu:0"
 
+
 batch_size = 128
 epochs = 20
 
@@ -215,7 +260,10 @@ def neural_thread():
             print("Please enter dataset name!")
             dname = input()
             print("Starting in 5 seconds...")
+            print('\a')
             time.sleep(5)
+            print("Starting in NOW")
+            print('\a')
             dataset_block = []
             neural_queue.clear()
             while len(dataset_block) < 2048:
@@ -228,7 +276,9 @@ def neural_thread():
             output_file = DATASET_FOLDER + str(dname) + "-em.pkl"
             with open(output_file, "wb") as w:
                 pickle.dump(dataset_block, w)
-                
+            
+            print('\a')
+            			
         elif com == "save":
             torch.save({"conv1": conv1.state_dict(), "conv2": conv2.state_dict(), "linear1": linear1.state_dict(), "linear2": linear2.state_dict()}, "./buddyguy.pt")
             print("Saved model!")
@@ -371,7 +421,7 @@ def neural_thread():
         elif com == "train":
             need_load = False
             print("Training...")
-            
+
             datasets = {}
             
             setid = 0
