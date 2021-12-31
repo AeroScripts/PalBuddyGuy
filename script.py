@@ -68,7 +68,8 @@ smoothing_mul = 0.3 # lower values = smoother
 
 # dataset groups. .pkl files of the same paramter/class should be in the same list. Each primary key is a parameter. Names must match the name you specified when recording, plus "-em.pkl"
 order = [
-    ["MouthSmileRight-em.mmap"],
+    ["Neutral-em.mmap"],
+	["MouthSmileRight-em.mmap"],
     ["MouthSmileLeft-em.mmap"],
 	["MouthUpperUpRight-em.mmap"],
 	["MouthUpperUpLeft-em.mmap"], 
@@ -131,10 +132,6 @@ def decode_neural(data):
     data = np.reshape(data, (1, 64, 20, 20))[0]
     return data
 
-import time
-import numpy as np
-import cv2
-import threading
 
 lt = time.time()
 
@@ -474,7 +471,7 @@ def neural_thread():
                     opt.step()
                     tl = tl + float(loss)
                 avg = float(tl/((2048*(setid+1)) // batch_size))
-            
+            print("Final training average: %f Loss: %f         " % (avg/100, float(loss)/100))
         else:
             print("Invalid command! valid: swap record")
     
