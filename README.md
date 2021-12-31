@@ -14,7 +14,7 @@ You then need to install Pytorch with gpu support. The easiest way to do so is u
 To install the runtime with anaconda, launch anaconda by searching "Anaconda prompt" in the start menu. Once open, run the following commands:
 ```
 conda install cudatoolkit cudnn pip
-pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio===0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 pip install tqdm opencv-python numpy
 ```
 
