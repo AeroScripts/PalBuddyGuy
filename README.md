@@ -14,7 +14,7 @@ You then need to install Pytorch with gpu support. The easiest way to do so is u
 To install the runtime with anaconda, launch anaconda by searching "Anaconda prompt" in the start menu. Once open, run the following commands:
 ```
 conda install cudatoolkit cudnn pip
-pip install torch==1.10.0+cu113 torchvision==0.11.1+cu113 torchaudio===0.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 pip install tqdm opencv-python numpy
 ```
 
@@ -26,6 +26,12 @@ Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recordi
 <ol>1. Run.bat</ol>
 <ol>2. Start SRaniple</ol>
 <ol>3. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange)</ol>
+<ol>4. On the script.py window use 'record' command to start recording datasets, enter in the dataset name to be used</ol>
+<ol>5. After recording datasets add datasets in the order list on script.py order</ol>
+<ol>6. Convert datasets .plk to .mmap with 'convertmmap'</ol>
+<ol>7. Use 'Train' command to train to the datasets, loss/avg should be below 0.001</ol>
+  <ol>8. 'save' to save model. Will show up as buddypal.pt in the folder</ol>
+
 
 ### Script usage
 
@@ -36,7 +42,7 @@ Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recordi
 |`convertmmap`|Convert pkl file to mmap to be used by training.
 |`train`|Once you have recorded some datasets, edit script.py to include the filenames in the table at the top of the file. Run the script, and enter the "train" command. Once it finishes, make sure to run "save" to save the results. Loss/Avg should be below 0.001 by the end. if not, something is wrong|
 |`stats`|Stats of model|
-|`infer`| Inference is what you will run when actually using the parameters|
+|`infer`|Inference is what you will run when actually using the parameters|
 |`save`|Save model|
 |`load`|Load model|
 
