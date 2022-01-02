@@ -20,12 +20,14 @@ pip install tqdm opencv-python numpy
 
 Edit the path in script.py "DATASET_FOLDER" to output datasets. Datasets recording is 408mb so you need a decent amount of storage space free</br>
 
+VRCFaceTracking mod needs to have TCP Bridge to be able to use the parameters. Use the VRCFaceTracking for at https://github.com/Adjerry91/VRCFaceTracking/tree/PalBuddyGuy-Integration
+
 # Running
 
 ### Steps:
 <ol>1. Run.bat</ol>
 <ol>2. Start SRaniple</ol>
-<ol>3. Launch VRC with https://github.com/benaclejames/VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange).</ol>
+<ol>3. Launch VRC with VRCFaceTracking or Neos that can trigger facetracking to be active (Green, not orange).</ol>
 <ol>4. On the script.py window use 'record' command to start recording datasets, enter in the dataset name to be used (Must include neutral dataset).</ol>
 <ol>5. After recording datasets add datasets in the order list on script.py order.</ol>
 <ol>6. Convert datasets .plk to .mmap with 'convertmmap'.</ol>
