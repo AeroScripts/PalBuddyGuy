@@ -1,52 +1,95 @@
-JawRight = 0 # +JawX
-JawLeft = 1 # -JawX
-JawForward = 2
-JawOpen = 3
-MouthApeShape = 4
-MouthUpperRight = 5 # +MouthUpper
-MouthUpperLeft = 6 # -MouthUpper
-MouthLowerRight = 7 # +MouthLower
-MouthLowerLeft = 8 # -MouthLower
-MouthUpperOverturn = 9
-MouthLowerOverturn = 10
-MouthPout = 11
-MouthSmileRight = 12 # +SmileSadRight
-MouthSmileLeft = 13 # +SmileSadLeft
-MouthSadRight = 14 # -SmileSadRight
-MouthSadLeft = 15 # -SmileSadLeft
-CheekPuffRight = 16
-CheekPuffLeft = 17
-CheekSuck = 18
-MouthUpperUpRight = 19
-MouthUpperUpLeft = 20
-MouthLowerDownRight = 21
-MouthLowerDownLeft = 22
-MouthUpperInside = 23
-MouthLowerInside = 24
-MouthLowerOverlay = 25
-TongueLongStep1 = 26
-TongueLongStep2 = 32
-TongueDown = 30 # -TongueY
-TongueUp = 29 # +TongueY
-TongueRight = 28 # +TongueX
-TongueLeft = 27 # -TongueX
-TongueRoll = 31
-TongueUpLeftMorph = 34
-TongueUpRightMorph = 33
-TongueDownLeftMorph = 36
-TongueDownRightMorph = 35
+import time
+import numpy as np
+import cv2
+import threading
 
+import socket
+import sys
+import os
+import torch
+import pickle
+import random
+from tqdm import tqdm
+
+#----------------------------------------------------
+# Static Variables
+#----------------------------------------------------
+
+blendshape_keys = {
+    "JawRight": 0, # +JawX
+    "JawLeft": 1, # -JawX
+    "JawForward": 2,
+    "JawOpen": 3,
+    "MouthApeShape": 4,
+    "MouthUpperRight": 5, # +MouthUpper
+    "MouthUpperLeft": 6, # -MouthUpper
+    "MouthLowerRight": 7, # +MouthLower
+    "MouthLowerLeft": 8, # -MouthLower
+    "MouthUpperOverturn": 9,
+    "MouthLowerOverturn": 10,
+    "MouthPout": 11,
+    "MouthSmileRight": 12, # +SmileSadRight
+    "MouthSmileLeft": 13, # +SmileSadLeft
+    "MouthSadRight": 14, # -SmileSadRight
+    "MouthSadLeft": 15, # -SmileSadLeft
+    "CheekPuffRight": 16,
+    "CheekPuffLeft": 17,
+    "CheekSuck": 18,
+    "MouthUpperUpRight": 19,
+    "MouthUpperUpLeft": 20,
+    "MouthLowerDownRight": 21,
+    "MouthLowerDownLeft": 22,
+    "MouthUpperInside": 23,
+    "MouthLowerInside": 24,
+    "MouthLowerOverlay": 25,
+    "TongueLongStep1": 26,
+    "TongueLongStep2": 32,
+    "TongueDown": 30, # -TongueY
+    "TongueUp": 29, # +TongueY
+    "TongueRight": 28, # +TongueX
+    "TongueLeft": 27, # -TongueX
+    "TongueRoll": 31,
+    "TongueUpLeftMorph": 34,
+    "TongueUpRightMorph": 33,
+    "TongueDownLeftMorph": 36,
+    "TongueDownRightMorph": 35
+}
+blendshape_keys_reversed = {}
+for k in blendshape_keys.keys():
+    blendshape_keys_reversed[blendshape_keys[k]] = k
 
 ENABLE_LOGGING = True
 ENABLE_DISPLAY = True
-DATASET_FOLDER = "G:\\sranidatisets\\"
+DATASET_FOLDER = "A:\\Unity\\_Assets\\Special\\PalBuddyGuy\\sranidatisets\\"
 
 max_power = 0.9 # the maximum threshold. Values will be adjusted to -1...1 range based on this
+smoothing_mul = 0.3 # lower values = smoother
 
 # dataset groups. .pkl files of the same paramter/class should be in the same list. Each primary key is a parameter. Names must match the name you specified when recording, plus "-em.pkl"
-order = [["neutral2-em.mmap", "neutral1-em.mmap", "nut3-em.mmap"], ["happy-em.mmap", "happy3-em.mmap"], ["mad1.mmap", "mad2.mmap", "mad4-em.mmap"], ["sad-em.mmap"], ["purseleft-em.mmap"], ["purseright-em.mmap"], ["open-em.mmap"], ["pog-em.mmap"], ["nwigleft-em.mmap"], ["nwigright-em.mmap"], ["showteth-em.mmap"]] # , ["weirdchamp-em.mmap"]
+order = [
+    ["Neutral1-em.mmap","Neutral2-em.mmap"],
+	["MouthSmile1-em.mmap","MouthSmile2-em.mmap","MouthSmile3-em.mmap","MouthSmile4-em.mmap"],
+	["MouthUpperUp1-em.mmap","MouthUpperUp2-em.mmap","MouthUpperUp3-em.mmap","MouthUpperUp4-em.mmap"],
+    ["MouthLowerDown1-em.mmap","MouthLowerDown2-em.mmap","MouthLowerDown3-em.mmap","MouthLowerDown4-em.mmap"],
+    ["TongueLongStep2_1-em.mmap","TongueLongStep2_2-em.mmap"], 
+    ["TongueUp1-em.mmap","TongueUp2-em.mmap"], 
+    ["TongueDown1-em.mmap","TongueDown2-em.mmap"] 
+    #["visch-em.mmap"],
+    #["visdd-em.mmap"],
+    #["visee-em.mmap"],
+    #["visff-em.mmap"],
+    #["visih-em.mmap"],
+    #["viskk-em.mmap"],
+    #["visnn-em.mmap"],
+    #["visoh-em.mmap"],
+    #["visou-em.mmap"],
+    #["visp-em.mmap"],
+    #["visrr-em.mmap"],
+    #["visss-em.mmap"],
+    #["visth-em.mmap"]
+] # , ["weirdchamp-em.mmap"]
 
-to_replace = {2: JawRight, 1: JawLeft, 4: MouthUpperUpLeft, 5: MouthUpperUpRight, 7: JawForward, 3: MouthPout}
+to_replace = {1: "MouthSmileLeft", 2: "MouthUpperUpLeft", 3: "MouthLowerDownLeft", 4: "TongueLongStep2", 5: "TongueUp", 6: "TongueDown"}
 to_replace_count = len(to_replace)
 
 
@@ -54,15 +97,13 @@ to_replace_count = len(to_replace)
 max_power_array = [ max_power for e in range(to_replace_count) ]
 
 
-import socket
-import sys
-import os
-
+# start listening on ports
 vrcft = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 vrcft.bind(("", 26421))
 vrcft.listen(1)
-
 print("Listening on ports 18452, 18455, 26421.")
+
+
 
 def decode_image(data, flipped=False):
     data = np.frombuffer(data, dtype=np.float32)
@@ -85,10 +126,6 @@ def decode_neural(data):
     data = np.reshape(data, (1, 64, 20, 20))[0]
     return data
 
-import time
-import numpy as np
-import cv2
-import threading
 
 lt = time.time()
 
@@ -115,18 +152,19 @@ def write_float(f):
 def write_param(key, value):
     target_stream.sendall(bytes([key,]))
     write_float(value)
-    
+  
 def write_params(tensor):
 
-    # normalize
-    #tensor = torch.clip(((tensor / max_power_array) * 2) - 1, -1, 1)#torch.clip(tensor * 2 / max_power - 1, -1, 1)
+    log = ""
 
     target_stream.sendall(bytes([2,]))
     target_stream.sendall(bytes([to_replace_count,]))
     i = 0
     for key in to_replace.keys():
-        write_param(to_replace[key], torch.clip(((tensor[key] / max_power_array[i]) * 2) - 1, -1, 1))
+        write_param(blendshape_keys[to_replace[key]], torch.clip(((tensor[key] / max_power_array[i]) * 2) - 1, -1, 1))
         i = i + 1
+    return log
+	
 
 def reader_thread():
     while True:
@@ -149,18 +187,15 @@ def reader_thread():
             traceback.print_exc()
             time.sleep(0.1)
 
-import torch
-import pickle
-import random
-from tqdm import tqdm
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else "cpu:0"
+
 
 batch_size = 128
 epochs = 20
 
 infer_output_paused = False
 do_quick_cal = False
-logger_string = "".join(["%.3f " for e in range(len(order))]).rstrip()
+logger_string = "| " + ("".join(["%.3f " for e in range(len(order))]).rstrip())
 
 def neural_thread():
     global swapped
@@ -213,7 +248,10 @@ def neural_thread():
             print("Please enter dataset name!")
             dname = input()
             print("Starting in 5 seconds...")
+            print('\a')
             time.sleep(5)
+            print("Starting in NOW")
+            print('\a')
             dataset_block = []
             neural_queue.clear()
             while len(dataset_block) < 2048:
@@ -226,7 +264,9 @@ def neural_thread():
             output_file = DATASET_FOLDER + str(dname) + "-em.pkl"
             with open(output_file, "wb") as w:
                 pickle.dump(dataset_block, w)
-                
+            
+            print('\a')
+            			
         elif com == "save":
             torch.save({"conv1": conv1.state_dict(), "conv2": conv2.state_dict(), "linear1": linear1.state_dict(), "linear2": linear2.state_dict()}, "./buddyguy.pt")
             print("Saved model!")
@@ -304,6 +344,10 @@ def neural_thread():
                 full_predict()
                 print("\n\nInfer started! Press enter to specify a command, like fastcal\n\n")
                 
+                log = ""
+                frame_index = 0
+                lt = time.time()
+				
                 while True:
                     if do_quick_cal:
                         # zero out params for puppeting
@@ -320,12 +364,12 @@ def neural_thread():
                             print("Puppeting %d" % e)
                             # ease-in puppet
                             if target_stream_is_valid:
-                                for i in range(100):
-                                    target_stream.sendall(bytes([2, 1, to_replace[key]]))
-                                    write_float((i / 50) - 1)
-                                    time.sleep(0.01)
-                                target_stream.sendall(bytes([2, 1, to_replace[key]]))
-                                write_float(1)
+                                for i in range(1000):
+                                    debug_tensor[key] = (i / 1000)
+                                    write_params(debug_tensor)
+                                    time.sleep(0.001)
+                                debug_tensor[key] = 1
+                                write_params(debug_tensor)
                             
                             # puppet for 3 seconds, take data from 2nd-3rd second
                             time.sleep(2)
@@ -343,12 +387,12 @@ def neural_thread():
                             
                             # ease-out puppet
                             if target_stream_is_valid:
-                                for i in range(100):
-                                    target_stream.sendall(bytes([2, 1, to_replace[key]]))
-                                    write_float(1 - ((i / 50) - 1))
-                                    time.sleep(0.01)
-                                target_stream.sendall(bytes([2, 1, to_replace[key]]))
-                                write_float(-1)
+                                for i in range(1000):
+                                    debug_tensor[key] = 1 - (i / 1000)
+                                    write_params(debug_tensor)
+                                    time.sleep(0.001)
+                                debug_tensor[key] = 0
+                                write_params(debug_tensor)
                             
                             e = e + 1
                         do_quick_cal = False
@@ -359,17 +403,22 @@ def neural_thread():
 
                     pred = full_predict()
                     if target_stream_is_valid:
-                        write_params(pred)
+                        log = write_params(pred)
 
-                    if not infer_output_paused:
+                    if not infer_output_paused and frame_index % 25 == 1:
+                        fps = int(1 / ((time.time() - lt) / 25))
+                        lt = time.time()
+                        #print(log + (" FPS: %d  Confidence: %f" % (fps, float(pred.cpu().numpy()[0]))), end='\r')
+						#Output current values of the string
                         print(logger_string % tuple(pred.cpu().numpy()), end=' \r')
                     time.sleep(0.01)
-                        
+					
+                    frame_index += 1    
                     
         elif com == "train":
             need_load = False
             print("Training...")
-            
+
             datasets = {}
             
             setid = 0
@@ -422,7 +471,7 @@ def neural_thread():
                     opt.step()
                     tl = tl + float(loss)
                 avg = float(tl/((2048*(setid+1)) // batch_size))
-            
+            print("Final training average: %f Loss: %f         " % (avg/100, float(loss)/100))
         else:
             print("Invalid command! valid: swap record")
     
